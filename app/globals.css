@@ -30,17 +30,14 @@
   --border: 217.2 32.6% 17.5%;
   --input: 217.2 32.6% 17.5%;
   --ring: 212.7 26.8% 83.9%;
-
-  --active-section: 200 100% 50%;
-  --active-section-foreground: 210 40% 98%;
 }
 
 body {
-  @apply bg-background text-foreground;
+  @apply bg-[#0d1117] text-foreground;
 }
 
 .section-button {
-  @apply w-full text-left px-4 py-2 hover:bg-secondary transition-colors;
+  @apply w-full text-left px-4 py-2 hover:bg-[#1d2433] transition-colors;
 }
 
 .section-button.active {
@@ -48,7 +45,7 @@ body {
 }
 
 .toolbar-button {
-  @apply h-8 w-8 flex items-center justify-center rounded hover:bg-secondary transition-colors;
+  @apply h-8 w-8 flex items-center justify-center rounded hover:bg-[#1d2433] transition-colors;
 }
 
 .omni-section {
@@ -67,34 +64,65 @@ body {
   @apply w-4 h-4 text-muted-foreground;
 }
 
-@layer base {
-  :root {
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-  .dark {
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
+::-webkit-scrollbar-track {
+  background: #1a1f2e;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2a2f3e;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3a3f4e;
+}
+
+/* Dark theme overrides */
+.bg-background {
+  background-color: #0d1117 !important;
+}
+
+.bg-card {
+  background-color: #0d1117 !important;
+}
+
+.border-border {
+  border-color: #1d2433 !important;
+}
+
+textarea {
+  color: #e6edf3 !important;
+}
+
+textarea::placeholder {
+  color: #8b949e !important;
+}
+
+.text-muted-foreground {
+  color: #8b949e !important;
+}
+
+/* Button states */
+.button-hover {
+  @apply hover:bg-[#1d2433] hover:text-white;
+}
+
+.button-active {
+  @apply active:bg-[#2d3443];
+}
+
+/* Input styling */
+input {
+  @apply bg-[#1a1f2e] border-[#2a2f3e] text-white placeholder-[#8b949e];
+}
+
+/* Card styling */
+.card {
+  @apply bg-[#1a1f2e] border-[#2a2f3e];
 }
