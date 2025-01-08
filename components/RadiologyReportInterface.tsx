@@ -47,7 +47,6 @@ export function RadiologyReportInterface() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const handleTranscriptionComplete = useCallback(async (text: string, section: Section) => {
-    // First update the section with the transcribed text
     setSections(prev => {
       const newContent = prev[section].content + (prev[section].content ? "\n" : "") + text;
       return {
@@ -60,10 +59,8 @@ export function RadiologyReportInterface() {
       };
     });
 
-    // Set the active section to the AI-classified section
     setActiveSection(section);
 
-    // Then enhance the text
     try {
       const response = await fetch("/api/enhance-text", {
         method: "POST",
@@ -121,9 +118,9 @@ export function RadiologyReportInterface() {
   }, []);
 
   return (
-    <div className="flex h-screen bg-sidebar-bg text-foreground">
+    <div className="flex h-screen bg-app-bg text-app-text">
       {/* Left Sidebar - Fields */}
-      <div className="w-48 border-r border-border-color">
+      <div className="w-48 border-r border-app-border bg-app-bg">
         <div className="p-4 flex items-center justify-between">
           <span className="text-sm font-medium">FIELDS</span>
           <span className="text-sm">AZ</span>
@@ -134,7 +131,7 @@ export function RadiologyReportInterface() {
               key={section}
               className={cn(
                 "section-button",
-                activeSection === section && "active"
+                activeSection === section && "bg-app-active text-white"
               )}
               onClick={() => setActiveSection(section)}
             >
@@ -148,18 +145,18 @@ export function RadiologyReportInterface() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col bg-[#0d1117]">
+      <div className="flex-1 flex flex-col bg-app-bg">
         {/* Top Bar */}
-        <div className="h-12 border-b border-border-color flex items-center px-4 space-x-4">
+        <div className="h-12 border-b border-app-border flex items-center px-4 space-x-4">
           <span className="text-sm font-medium">EXAM:</span>
-          <span className="text-sm text-muted-foreground">{exam.name}</span>
+          <span className="text-sm text-app-text-muted">{exam.name}</span>
         </div>
 
         {/* Content Area */}
         <div className="flex-1 p-4">
-          <ScrollArea className="h-[calc(100vh-8rem)] rounded-md border p-4">
+          <ScrollArea className="h-[calc(100vh-8rem)] rounded-md border border-app-border p-4">
             <textarea
-              className="min-h-[calc(100vh-10rem)] w-full resize-none bg-transparent p-2 focus:outline-none"
+              className="min-h-[calc(100vh-10rem)] w-full resize-none bg-transparent p-2 focus:outline-none text-app-text placeholder:text-app-text-muted"
               placeholder="Start speaking or use templates..."
               value={sections[activeSection].content}
               onChange={(e) => setSections(prev => ({
@@ -174,7 +171,7 @@ export function RadiologyReportInterface() {
         </div>
 
         {/* Toolbar */}
-        <div className="h-12 border-t border-border-color flex items-center px-4 justify-between bg-sidebar-bg">
+        <div className="h-12 border-t border-app-border flex items-center px-4 justify-between bg-app-bg">
           <div className="flex items-center space-x-2">
             <Button variant="ghost" size="icon" className="toolbar-button">
               <Bold className="h-4 w-4" />
@@ -211,7 +208,7 @@ export function RadiologyReportInterface() {
       </div>
 
       {/* Right Sidebar - Study & Templates */}
-      <div className="w-80 border-l border-border-color">
+      <div className="w-80 border-l border-app-border bg-app-bg">
         <div className="p-4">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">STUDY</span>
@@ -221,8 +218,8 @@ export function RadiologyReportInterface() {
           </div>
           <div className="mt-4">
             <h2 className="text-sm font-medium">{exam.name} ({exam.id})</h2>
-            <p className="text-sm text-muted-foreground">{exam.bpid}</p>
-            <p className="text-sm text-muted-foreground">{exam.status}</p>
+            <p className="text-sm text-app-text-muted">{exam.bpid}</p>
+            <p className="text-sm text-app-text-muted">{exam.status}</p>
           </div>
           <div className="mt-4">
             <Button variant="ghost" size="sm" className="w-full justify-start">
@@ -239,7 +236,7 @@ export function RadiologyReportInterface() {
               className="template-search pl-10"
               placeholder="Say 'Omni bot' to get started..."
             />
-            <Mic className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Mic className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-app-text-muted" />
           </div>
         </div>
 
@@ -254,7 +251,7 @@ export function RadiologyReportInterface() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-app-text-muted" />
             </div>
           </div>
           <div className="mt-4">

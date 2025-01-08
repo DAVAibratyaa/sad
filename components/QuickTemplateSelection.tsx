@@ -70,13 +70,7 @@ const TEMPLATES = [
 ];
 
 export function QuickTemplateSelection({ activeSection, onTemplateSelect }: QuickTemplateSelectionProps) {
-  const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-
-  const filteredTemplates = TEMPLATES.filter(template => 
-    template.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    template.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   const handleTemplateClick = (template: SimpleTemplate) => {
     onTemplateSelect(template);
@@ -84,17 +78,17 @@ export function QuickTemplateSelection({ activeSection, onTemplateSelect }: Quic
 
   return (
     <div className="space-y-2">
-      {filteredTemplates.map((category, index) => (
+      {TEMPLATES.map((category, index) => (
         <div key={index} className="space-y-2">
           <div 
-            className="template-category cursor-pointer"
+            className="flex items-center gap-2 p-2 hover:bg-app-hover rounded transition-colors cursor-pointer"
             onClick={() => setSelectedCategory(selectedCategory === category.category ? null : category.category)}
           >
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <FileText className="h-4 w-4 text-app-text-muted" />
             <div className="flex flex-col">
-              <span className="text-sm">{category.category}</span>
+              <span className="text-sm text-app-text">{category.category}</span>
               {category.description && (
-                <span className="text-xs text-muted-foreground">({category.description})</span>
+                <span className="text-xs text-app-text-muted">({category.description})</span>
               )}
             </div>
           </div>
@@ -104,7 +98,7 @@ export function QuickTemplateSelection({ activeSection, onTemplateSelect }: Quic
               {category.templates.map((template, tIndex) => (
                 <div
                   key={tIndex}
-                  className="text-sm text-muted-foreground hover:text-foreground cursor-pointer p-2 rounded hover:bg-hover-bg transition-colors"
+                  className="text-sm text-app-text-muted hover:text-app-text cursor-pointer p-2 rounded hover:bg-app-hover transition-colors"
                   onClick={() => handleTemplateClick(template)}
                 >
                   {template.content.slice(0, 50)}...
