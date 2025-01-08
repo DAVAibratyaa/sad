@@ -1,0 +1,35 @@
+const medicalTerms = [
+  "tomografia",
+  "ressonância",
+  "radiografia",
+  "ultrassonografia",
+  "contraste",
+  "lesão",
+  "nódulo",
+  "massa",
+  "fratura",
+  "edema",
+  "inflamação",
+  "metástase",
+  "carcinoma",
+  "pneumonia",
+  "derrame",
+  "calcificação",
+  "aterosclerose",
+  "aneurisma",
+  "estenose",
+  "hérnia",
+  "osteoporose",
+  "artrite",
+  "fibrose",
+  "enfisema",
+  "atelectasia",
+  "hipertrofia",
+  "dilatação",
+  "obstrução",
+  "hemorragia",
+  "isquemia"
+]
+
+export default medicalTerms
+
