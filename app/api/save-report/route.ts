@@ -1,47 +1,74 @@
-import { NextResponse } from 'next/server'
-import { saveReport } from '@/lib/db'
+import { NextRequest, NextResponse } from "next/server";
+import fs from 'fs';
+import path from 'path';
 
-export async function POST(req: Request) {
+const REPORTS_DIR = path.join(process.cwd(), 'data', 'reports');
+
+// Ensure reports directory exists
+if (!fs.existsSync(REPORTS_DIR)) {
+  fs.mkdirSync(REPORTS_DIR, { recursive: true });
+}
+
+export async function POST(request: NextRequest) {
   try {
-    const report = await req.json()
-    
-    console.log('Received report data:', {
-      examType: report.examType,
-      findings: report.findings,
-      generatedReport: report.generatedReport,
-      followUpRecommendations: report.followUpRecommendations,
-      differentialDiagnosis: report.differentialDiagnosis
-    });
+    const { sections, studyId } = await request.json();
 
-    // Update the validation check to be less strict
-    if (!report.examType || !report.findings || !report.generatedReport) {
+    if (!sections || !studyId) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: "Missing required fields" },
         { status: 400 }
-      )
+      );
     }
 
-    const savedReport = await saveReport(report)
+    const reportPath = path.join(REPORTS_DIR, `${studyId}.json`);
     
-    if (!savedReport) {
-      throw new Error('Failed to save report to database')
-    }
+    // Save report data
+    fs.writeFileSync(reportPath, JSON.stringify({
+      sections,
+      lastModified: new Date().toISOString(),
+      studyId
+    }, null, 2));
 
-    return NextResponse.json({
+    return NextResponse.json({ 
       success: true,
-      data: savedReport
-    })
+      message: "Report saved successfully" 
+    });
   } catch (error) {
-    console.error('Error in save-report route:', error)
-    
-    // Return a more detailed error response
+    console.error("Save report error:", error);
     return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : 'An unknown error occurred',
-        details: error instanceof Error ? error.stack : undefined
-      },
+      { error: "Failed to save report" },
       { status: 500 }
-    )
+    );
   }
 }
 
+export async function GET(request: NextRequest) {
+  try {
+    const studyId = request.nextUrl.searchParams.get('studyId');
+
+    if (!studyId) {
+      return NextResponse.json(
+        { error: "Study ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const reportPath = path.join(REPORTS_DIR, `${studyId}.json`);
+    
+    if (!fs.existsSync(reportPath)) {
+      return NextResponse.json(
+        { error: "Report not found" },
+        { status: 404 }
+      );
+    }
+
+    const reportData = JSON.parse(fs.readFileSync(reportPath, 'utf-8'));
+    return NextResponse.json(reportData);
+  } catch (error) {
+    console.error("Load report error:", error);
+    return NextResponse.json(
+      { error: "Failed to load report" },
+      { status: 500 }
+    );
+  }
+}

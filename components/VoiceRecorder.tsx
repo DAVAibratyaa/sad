@@ -1,7 +1,8 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import { Button } from "./ui/button";
-import { useState, useRef, useCallback } from "react";
+import { Mic } from "lucide-react";
 
 interface VoiceRecorderProps {
   onTranscriptionComplete: (text: string) => void;
@@ -9,79 +10,67 @@ interface VoiceRecorderProps {
 
 export function VoiceRecorder({ onTranscriptionComplete }: VoiceRecorderProps) {
   const [isRecording, setIsRecording] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
 
   const startRecording = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      chunksRef.current = [];
+      const recorder = new MediaRecorder(stream);
+      const audioChunks: Blob[] = [];
 
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          chunksRef.current.push(e.data);
-        }
+      recorder.ondataavailable = (event) => {
+        audioChunks.push(event.data);
       };
 
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(chunksRef.current, { type: "audio/webm" });
-        setIsProcessing(true);
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+        const formData = new FormData();
+        formData.append('audio', audioBlob);
 
         try {
-          const formData = new FormData();
-          formData.append("audio", audioBlob);
-
-          const response = await fetch("/api/transcribe", {
-            method: "POST",
+          const response = await fetch('/api/transcribe', {
+            method: 'POST',
             body: formData,
           });
 
           if (!response.ok) {
-            throw new Error("Transcription failed");
+            throw new Error('Transcription failed');
           }
 
           const data = await response.json();
           onTranscriptionComplete(data.text);
         } catch (error) {
-          console.error("Transcription error:", error);
-        } finally {
-          setIsProcessing(false);
+          console.error('Transcription error:', error);
         }
 
-        // Cleanup
+        // Clean up
         stream.getTracks().forEach(track => track.stop());
       };
 
-      mediaRecorder.start();
+      recorder.start();
+      setMediaRecorder(recorder);
       setIsRecording(true);
     } catch (error) {
-      console.error("Error starting recording:", error);
+      console.error('Failed to start recording:', error);
     }
   }, [onTranscriptionComplete]);
 
   const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
       setIsRecording(false);
+      setMediaRecorder(null);
     }
-  }, [isRecording]);
+  }, [mediaRecorder]);
 
   return (
     <Button
-      variant="outline"
+      variant="ghost"
       size="icon"
+      className={`toolbar-button ${isRecording ? 'bg-red-500 hover:bg-red-600' : ''}`}
       onClick={isRecording ? stopRecording : startRecording}
-      disabled={isProcessing}
-      className={isRecording ? "bg-red-500 hover:bg-red-600" : ""}
     >
-      {isProcessing ? (
-        <span className="animate-spin">⌛</span>
-      ) : (
-        <span>{isRecording ? "⏹" : "🎤"}</span>
-      )}
+      <Mic className={`h-4 w-4 ${isRecording ? 'animate-pulse' : ''}`} />
     </Button>
   );
 }
