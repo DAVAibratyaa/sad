@@ -3,11 +3,10 @@
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { ScrollArea } from "./ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Input } from "./ui/input";
 import { VoiceRecorder } from "./VoiceRecorder";
 import { QuickTemplateSelection } from "./QuickTemplateSelection";
-import { Template } from "../lib/defaultTemplates";
+import { Template, SimpleTemplate } from "../lib/types";
 import { useState, useCallback, useEffect } from "react";
 import { cn } from "../lib/utils";
 import {
@@ -23,43 +22,9 @@ import {
   ChevronRight,
   FileText,
   Mic,
-  Snowflake,
   Search
 } from "lucide-react";
-
-interface SectionContent {
-  content: string;
-  lastModified: Date;
-  isEnhancing?: boolean;
-}
-
-type ReportSections = {
-  [key: string]: SectionContent;
-};
-
-const SECTIONS = [
-  "Procedure",
-  "History",
-  "Technique",
-  "Comparison",
-  "Lungs",
-  "Pleura",
-  "Cardiomediastinal",
-  "Bones",
-  "Impression"
-] as const;
-
-type Section = typeof SECTIONS[number];
-
-const TEMPLATES = [
-  { icon: FileText, label: "CT Abdomen", description: "Body CT Abdomen and Pelvis with Cont..." },
-  { icon: FileText, label: "Bone", description: "" },
-  { icon: FileText, label: "Chest Portable", description: "Chest XR 1 View" },
-  { icon: FileText, label: "Chest Double", description: "Chest XR 2 View" },
-  { icon: FileText, label: "Coronary Score", description: "CT CT Calcium Score" },
-  { icon: FileText, label: "MSK MRI Knee", description: "MSK MRI Knee without Contrast" },
-  { icon: FileText, label: "US Thyroid TI-RADS", description: "" },
-];
+import { Section, SectionContent, ReportSections, SECTIONS } from "../lib/types";
 
 export function RadiologyReportInterface() {
   const [activeSection, setActiveSection] = useState<Section>("Lungs");
@@ -69,7 +34,7 @@ export function RadiologyReportInterface() {
         section,
         { content: "", lastModified: new Date() }
       ])
-    )
+    ) as ReportSections
   );
 
   const [exam, setExam] = useState({
@@ -80,6 +45,68 @@ export function RadiologyReportInterface() {
   });
 
   const [searchQuery, setSearchQuery] = useState("");
+
+  const handleTranscriptionComplete = useCallback(async (text: string, section: Section) => {
+    // First update the section with the transcribed text
+    setSections(prev => {
+      const newContent = prev[section].content + (prev[section].content ? "\n" : "") + text;
+      return {
+        ...prev,
+        [section]: {
+          content: newContent,
+          lastModified: new Date(),
+          isEnhancing: true
+        }
+      };
+    });
+
+    // Set the active section to the AI-classified section
+    setActiveSection(section);
+
+    // Then enhance the text
+    try {
+      const response = await fetch("/api/enhance-text", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text, section }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Enhancement failed");
+      }
+
+      const data = await response.json();
+      setSections(prev => ({
+        ...prev,
+        [section]: {
+          content: data.text,
+          lastModified: new Date(),
+          isEnhancing: false,
+        }
+      }));
+    } catch (error) {
+      console.error("Text enhancement error:", error);
+      setSections(prev => ({
+        ...prev,
+        [section]: {
+          ...prev[section],
+          isEnhancing: false,
+        }
+      }));
+    }
+  }, []);
+
+  const handleTemplateSelect = useCallback((template: SimpleTemplate) => {
+    setSections(prev => ({
+      ...prev,
+      [activeSection]: {
+        content: prev[activeSection].content + (prev[activeSection].content ? "\n" : "") + template.content,
+        lastModified: new Date()
+      }
+    }));
+  }, [activeSection]);
 
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(sections[activeSection].content);
@@ -112,6 +139,9 @@ export function RadiologyReportInterface() {
               onClick={() => setActiveSection(section)}
             >
               {section}
+              {sections[section].isEnhancing && (
+                <span className="ml-2 animate-spin">⌛</span>
+              )}
             </button>
           ))}
         </div>
@@ -127,33 +157,20 @@ export function RadiologyReportInterface() {
 
         {/* Content Area */}
         <div className="flex-1 p-4">
-          {/* Section Headers */}
-          <div className="space-y-4">
-            <div>
-              <span className="text-sm font-medium">HISTORY:</span>
-              <p className="text-sm text-muted-foreground">RML pneumonia</p>
-            </div>
-            <div>
-              <span className="text-sm font-medium">TECHNIQUE:</span>
-              <p className="text-sm text-muted-foreground">PA and lateral views of the chest</p>
-            </div>
-            <div>
-              <span className="text-sm font-medium">COMPARISON:</span>
-              <p className="text-sm text-muted-foreground">None</p>
-            </div>
-            <div>
-              <span className="text-sm font-medium">FINDINGS:</span>
-              <div className="pl-4 border-l-2 border-active-blue space-y-2">
-                <p className="text-sm">The lungs are clear. No pleural effusion or pneumothorax.</p>
-                <p className="text-sm">The cardiomediastinal silhouette is within normal limits.</p>
-                <p className="text-sm">No significant osseous abnormalities.</p>
-              </div>
-            </div>
-            <div>
-              <span className="text-sm font-medium">IMPRESSION:</span>
-              <p className="text-sm text-muted-foreground">No active disease in the chest</p>
-            </div>
-          </div>
+          <ScrollArea className="h-[calc(100vh-8rem)] rounded-md border p-4">
+            <textarea
+              className="min-h-[calc(100vh-10rem)] w-full resize-none bg-transparent p-2 focus:outline-none"
+              placeholder="Start speaking or use templates..."
+              value={sections[activeSection].content}
+              onChange={(e) => setSections(prev => ({
+                ...prev,
+                [activeSection]: {
+                  content: e.target.value,
+                  lastModified: new Date()
+                }
+              }))}
+            />
+          </ScrollArea>
         </div>
 
         {/* Toolbar */}
@@ -180,6 +197,7 @@ export function RadiologyReportInterface() {
             <Button variant="ghost" size="icon" className="toolbar-button" onClick={handleCopy}>
               <Copy className="h-4 w-4" />
             </Button>
+            <VoiceRecorder onTranscriptionComplete={handleTranscriptionComplete} />
           </div>
           <div className="flex items-center space-x-2">
             <Button variant="ghost" size="sm">IMPRESSION</Button>
@@ -239,18 +257,11 @@ export function RadiologyReportInterface() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             </div>
           </div>
-          <div className="mt-4 space-y-1">
-            {TEMPLATES.map((template, index) => (
-              <div key={index} className="template-category">
-                <template.icon className="h-4 w-4 text-muted-foreground" />
-                <div className="flex flex-col">
-                  <span className="text-sm">{template.label}</span>
-                  {template.description && (
-                    <span className="text-xs text-muted-foreground">({template.description})</span>
-                  )}
-                </div>
-              </div>
-            ))}
+          <div className="mt-4">
+            <QuickTemplateSelection
+              activeSection={activeSection}
+              onTemplateSelect={handleTemplateSelect}
+            />
           </div>
         </div>
       </div>

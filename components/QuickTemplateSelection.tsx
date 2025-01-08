@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { Input } from "./ui/input";
-import { FileText, Search } from "lucide-react";
+import { FileText } from "lucide-react";
+import { Section, SimpleTemplate } from "../lib/types";
 
 interface QuickTemplateSelectionProps {
-  activeSection: string;
-  onTemplateSelect: (template: { content: string }) => void;
+  activeSection: Section;
+  onTemplateSelect: (template: SimpleTemplate) => void;
 }
 
 const TEMPLATES = [
@@ -77,54 +78,42 @@ export function QuickTemplateSelection({ activeSection, onTemplateSelect }: Quic
     template.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleTemplateClick = (template: { content: string }) => {
+  const handleTemplateClick = (template: SimpleTemplate) => {
     onTemplateSelect(template);
   };
 
   return (
-    <div className="space-y-4">
-      <div className="relative">
-        <Input 
-          className="template-search pl-10"
-          placeholder="Search templates..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-      </div>
-
-      <div className="space-y-2">
-        {filteredTemplates.map((category, index) => (
-          <div key={index} className="space-y-2">
-            <div 
-              className="template-category cursor-pointer"
-              onClick={() => setSelectedCategory(selectedCategory === category.category ? null : category.category)}
-            >
-              <FileText className="h-4 w-4 text-muted-foreground" />
-              <div className="flex flex-col">
-                <span className="text-sm">{category.category}</span>
-                {category.description && (
-                  <span className="text-xs text-muted-foreground">({category.description})</span>
-                )}
-              </div>
+    <div className="space-y-2">
+      {filteredTemplates.map((category, index) => (
+        <div key={index} className="space-y-2">
+          <div 
+            className="template-category cursor-pointer"
+            onClick={() => setSelectedCategory(selectedCategory === category.category ? null : category.category)}
+          >
+            <FileText className="h-4 w-4 text-muted-foreground" />
+            <div className="flex flex-col">
+              <span className="text-sm">{category.category}</span>
+              {category.description && (
+                <span className="text-xs text-muted-foreground">({category.description})</span>
+              )}
             </div>
-
-            {selectedCategory === category.category && (
-              <div className="pl-6 space-y-2">
-                {category.templates.map((template, tIndex) => (
-                  <div
-                    key={tIndex}
-                    className="text-sm text-muted-foreground hover:text-foreground cursor-pointer p-2 rounded hover:bg-hover-bg transition-colors"
-                    onClick={() => handleTemplateClick(template)}
-                  >
-                    {template.content.slice(0, 50)}...
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
-        ))}
-      </div>
+
+          {selectedCategory === category.category && (
+            <div className="pl-6 space-y-2">
+              {category.templates.map((template, tIndex) => (
+                <div
+                  key={tIndex}
+                  className="text-sm text-muted-foreground hover:text-foreground cursor-pointer p-2 rounded hover:bg-hover-bg transition-colors"
+                  onClick={() => handleTemplateClick(template)}
+                >
+                  {template.content.slice(0, 50)}...
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 }

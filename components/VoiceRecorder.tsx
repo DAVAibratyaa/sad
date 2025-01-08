@@ -3,14 +3,16 @@
 import { useState, useCallback } from "react";
 import { Button } from "./ui/button";
 import { Mic } from "lucide-react";
+import { Section } from "../lib/types";
 
 interface VoiceRecorderProps {
-  onTranscriptionComplete: (text: string) => void;
+  onTranscriptionComplete: (text: string, section: Section) => void;
 }
 
 export function VoiceRecorder({ onTranscriptionComplete }: VoiceRecorderProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const startRecording = useCallback(async () => {
     try {
@@ -23,24 +25,44 @@ export function VoiceRecorder({ onTranscriptionComplete }: VoiceRecorderProps) {
       };
 
       recorder.onstop = async () => {
+        setIsProcessing(true);
         const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
         const formData = new FormData();
         formData.append('audio', audioBlob);
 
         try {
-          const response = await fetch('/api/transcribe', {
+          // First, get the transcription
+          const transcribeResponse = await fetch('/api/transcribe', {
             method: 'POST',
             body: formData,
           });
 
-          if (!response.ok) {
+          if (!transcribeResponse.ok) {
             throw new Error('Transcription failed');
           }
 
-          const data = await response.json();
-          onTranscriptionComplete(data.text);
+          const transcribeData = await transcribeResponse.json();
+          const text = transcribeData.text;
+
+          // Then, classify the section
+          const classifyResponse = await fetch('/api/classify-section', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ text }),
+          });
+
+          if (!classifyResponse.ok) {
+            throw new Error('Section classification failed');
+          }
+
+          const classifyData = await classifyResponse.json();
+          onTranscriptionComplete(text, classifyData.section as Section);
         } catch (error) {
-          console.error('Transcription error:', error);
+          console.error('Processing error:', error);
+        } finally {
+          setIsProcessing(false);
         }
 
         // Clean up
@@ -67,10 +89,11 @@ export function VoiceRecorder({ onTranscriptionComplete }: VoiceRecorderProps) {
     <Button
       variant="ghost"
       size="icon"
-      className={`toolbar-button ${isRecording ? 'bg-red-500 hover:bg-red-600' : ''}`}
+      className={`toolbar-button ${isRecording ? 'bg-red-500 hover:bg-red-600' : ''} ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
       onClick={isRecording ? stopRecording : startRecording}
+      disabled={isProcessing}
     >
-      <Mic className={`h-4 w-4 ${isRecording ? 'animate-pulse' : ''}`} />
+      <Mic className={`h-4 w-4 ${isRecording ? 'animate-pulse' : ''} ${isProcessing ? 'animate-spin' : ''}`} />
     </Button>
   );
 }
